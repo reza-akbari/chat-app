@@ -3,16 +3,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import { mutate } from "swr";
 import { MESSAGES_WS } from "../consts";
-import { useMessages } from "../hooks/useMessages";
+import { Message, useMessages } from "../hooks/useMessages";
 import { fetchApi } from "../utils/fetchApi";
 import { getAuthToken, getSavedAuthId } from "../utils/localAuth";
-
-interface Message {
-  id: number;
-  content: string;
-  createdAt: string;
-  user: { id: number; name: string };
-}
 
 const addNewMessage = (message: Message) => {
   mutate(
@@ -26,6 +19,87 @@ const addNewMessage = (message: Message) => {
     { revalidate: false }
   );
 };
+
+const appendMessages = (messages: Message[]) => {
+  mutate(
+    "/messages",
+    (data: any) => {
+      if (!data || !data.messages) {
+        return;
+      }
+      return { ...data, messages: data.messages.concat(messages) };
+    },
+    { revalidate: false }
+  );
+};
+
+const LoadMoreBtn = memo(() => {
+  const [isFetching, setIsFetching] = useState(false);
+  const { data, isLoading } = useMessages();
+  const { messages } = data || {};
+
+  const loadMore = () => {
+    if (isLoading || isFetching || !messages) {
+      return;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) {
+      return;
+    }
+
+    setIsFetching(true);
+    fetchApi(`/messages?before=${lastMessage.id}`, undefined, true)
+      .then((data) => {
+        appendMessages(data.messages);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setIsFetching(false);
+      });
+  };
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+
+  const btn = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!btn.current || !("IntersectionObserver" in window)) {
+      return;
+    }
+    let isDestroyed = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          if (!isDestroyed) {
+            loadMoreRef.current();
+          }
+        }, 100); // add a delay for better user experience
+      }
+    });
+    observer.observe(btn.current);
+    return () => {
+      isDestroyed = true;
+      observer.disconnect();
+    };
+  }, []);
+
+  if (!data) return null;
+
+  return (
+    <button
+      ref={btn}
+      type="button"
+      className="disabled:opacity-60 px-3 py-1 bg-sky-500 text-white rounded-full text-sm"
+      disabled={isLoading || isFetching}
+      onClick={(event) => {
+        event.preventDefault();
+        loadMore();
+      }}
+    >
+      بیشتر
+    </button>
+  );
+});
 
 const MessagesList = memo(() => {
   useEffect(() => {
@@ -62,6 +136,9 @@ const MessagesList = memo(() => {
           <div className="p-1 leading-6">{message.content}</div>
         </div>
       ))}
+      <div className="text-center">
+        <LoadMoreBtn />
+      </div>
     </div>
   );
 });
@@ -98,14 +175,14 @@ const NewMessageForm = memo(() => {
     >
       <input
         ref={contentInput}
-        className="border border-gray-300 rounded-lg py-2 px-3"
+        className="disabled:opacity-60 border border-gray-300 rounded-lg py-2 px-3"
         placeholder="پیام جدید..."
         disabled={isLoading}
         name="content"
       />
       <button
         disabled={isLoading}
-        className="bg-sky-500 inline-flex justify-center items-center text-white rounded-full w-10 h-10"
+        className="disabled:opacity-60 bg-sky-500 inline-flex justify-center items-center text-white rounded-full w-10 h-10"
       >
         <IoSend className="-scale-x-100 text-xl" />
       </button>

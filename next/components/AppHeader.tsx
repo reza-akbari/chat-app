@@ -11,6 +11,7 @@ const LoginOrOut = memo(() => {
     return (
       <button
         type="button"
+        className="disabled:opacity-60"
         disabled={isLoading}
         onClick={(event) => {
           event.preventDefault();

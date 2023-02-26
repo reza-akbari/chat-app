@@ -41,7 +41,7 @@ export const AuthForm = memo(({ type }: AuthFormProps) => {
       <label className="flex flex-col gap-1">
         <span className="text-gray-500 text-sm">نام:</span>
         <input
-          className="p-2 border border-gray-300 rounded-lg"
+          className="disabled:opacity-60 p-2 border border-gray-300 rounded-lg"
           ref={nameInput}
           disabled={isLoading}
           name="name"
@@ -50,7 +50,7 @@ export const AuthForm = memo(({ type }: AuthFormProps) => {
       <label className="flex flex-col gap-1">
         <span className="text-gray-500 text-sm">کلمه عبور:</span>
         <input
-          className="p-2 border border-gray-300 rounded-lg"
+          className="disabled:opacity-60 p-2 border border-gray-300 rounded-lg"
           ref={passwordInput}
           disabled={isLoading}
           type="password"
@@ -58,7 +58,7 @@ export const AuthForm = memo(({ type }: AuthFormProps) => {
         />
       </label>
       <button
-        className="px-4 py-2 bg-sky-500 text-white rounded-lg"
+        className="disabled:opacity-60 px-4 py-2 bg-sky-500 text-white rounded-lg"
         disabled={isLoading}
       >
         {type === "sign-in" ? "ورود" : "ثبت نام"}
