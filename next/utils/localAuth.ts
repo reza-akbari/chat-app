@@ -17,7 +17,7 @@ const parseToken = (token: string) => {
   return JSON.parse(atob(b64str));
 };
 
-const refreshAuthToken = async () => {
+const refreshAuthToken = async (): Promise<string | undefined> => {
   try {
     const { accessToken } = await fetch(API_BASE + "/auth/refresh", {
       method: "POST",
@@ -31,7 +31,7 @@ const refreshAuthToken = async () => {
   return undefined;
 };
 
-export const getAuthToken = async () => {
+export const getAuthToken = async (): Promise<string | undefined> => {
   if (inMemoryToken) {
     const { exp } = parseToken(inMemoryToken);
     if (exp < Date.now() / 1000) {

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
+import { mutate } from "swr";
+import { MESSAGES_WS } from "../consts";
 import { useMessages } from "../hooks/useMessages";
 import { fetchApi } from "../utils/fetchApi";
-import { getSavedAuthId } from "../utils/localAuth";
-import { mutate } from "swr";
+import { getAuthToken, getSavedAuthId } from "../utils/localAuth";
 
 interface Message {
   id: number;
@@ -13,7 +14,39 @@ interface Message {
   user: { id: number; name: string };
 }
 
+const addNewMessage = (message: Message) => {
+  mutate(
+    "/messages",
+    (data: any) => {
+      if (!data || !data.messages) {
+        return;
+      }
+      return { ...data, messages: [message, ...data.messages] };
+    },
+    { revalidate: false }
+  );
+};
+
 const MessagesList = memo(() => {
+  useEffect(() => {
+    let isDestroyed = false;
+    let socket: WebSocket | undefined = undefined;
+    (async () => {
+      const token = await getAuthToken();
+      if (isDestroyed || !token) {
+        return;
+      }
+      socket = new WebSocket(MESSAGES_WS + "/" + token);
+      socket.addEventListener("message", ({ data }) => {
+        addNewMessage(JSON.parse(data));
+      });
+    })();
+    return () => {
+      isDestroyed = true;
+      socket?.close();
+    };
+  }, []);
+
   const { data, error } = useMessages();
   if (error) return <div>خطا</div>;
   if (!data) return <div>درحال دریافت...</div>;
@@ -52,17 +85,7 @@ const NewMessageForm = memo(() => {
           { content: contentInput.current?.value },
           true
         )
-          .then(({ message }) => {
-            mutate(
-              "/messages",
-              (data: any) => {
-                if (!data || !data.messages) {
-                  return;
-                }
-                return { ...data, messages: [message, ...data.messages] };
-              },
-              { revalidate: false }
-            );
+          .then(() => {
             if (contentInput.current) {
               contentInput.current.value = "";
             }

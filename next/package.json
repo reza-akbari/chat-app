@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "ts-check": "tsc --noEmit --excludeDirectories .next,node_modules",
     "lint": "next lint"
   },
   "dependencies": {

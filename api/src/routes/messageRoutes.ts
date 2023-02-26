@@ -5,20 +5,7 @@ import { Message } from "../entity/Message";
 import { User } from "../entity/User";
 import { authOnly } from "../middlewares/authOnly";
 import { asyncRoute } from "../utils/asyncRoute";
-
-const formateMessage = (m: Message) => ({
-  id: m.id,
-  content: m.content,
-  createdAt: m.createdAt.toLocaleString(["fa-IR"], {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Tehran",
-  }),
-  user: {
-    id: m.user.id,
-    name: m.user.name,
-  },
-});
+import { formatMessage } from "../utils/formatMessage";
 
 export const messageRoutes = (app: Express) => {
   app.get("/messages", authOnly, (req, res) => {
@@ -30,7 +17,7 @@ export const messageRoutes = (app: Express) => {
         take: 100,
         relations: { user: true },
       });
-      res.json({ messages: messages.map(formateMessage) });
+      res.json({ messages: messages.map(formatMessage) });
     });
   });
 
@@ -51,8 +38,10 @@ export const messageRoutes = (app: Express) => {
       }
       const message = Message.create({ userId, content });
       await message.save();
-      message.user = await User.findOneByOrFail({ id: userId });
-      res.json({ message: formateMessage(message) });
+      if (!message.user) {
+        message.user = await User.findOneByOrFail({ id: userId });
+      }
+      res.json({ message: formatMessage(message) });
     });
   });
 };
