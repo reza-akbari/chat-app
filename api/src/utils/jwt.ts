@@ -3,7 +3,7 @@ import { JWT_SECRET } from "../const";
 
 export const jwtTokenize = (payload: Object, expireSeconds: number): string => {
   return sign(payload, JWT_SECRET, {
-    expiresIn: expireSeconds * 1000,
+    expiresIn: expireSeconds,
   });
 };
 

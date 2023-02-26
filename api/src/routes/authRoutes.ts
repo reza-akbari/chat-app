@@ -16,7 +16,8 @@ export const authRoutes = (app: Express) => {
 
       const user = await User.findOneBy({ name });
       if (!user || !(await user.verifyPassword(password))) {
-        res.sendStatus(400);
+        res.status(422);
+        res.json({ message: "اطلاعات وارد شده صحیح نیست!" });
         return;
       }
 
@@ -31,16 +32,32 @@ export const authRoutes = (app: Express) => {
 
   app.post("/auth/sign-up", (req, res) => {
     asyncRoute(res, async () => {
-      let { password, name } = req.body;
+      let { password, name } = req.body as { password: string; name: string };
       password = String(password);
-      name = String(name);
+      name = String(name).trim();
 
       const existingUser = await User.findOneBy({ name });
       if (existingUser) {
-        res.json({ nameIsTaken: true });
+        res.status(422);
+        res.json({ message: "نام قبلا انتخاب شده است!" });
         return;
       }
 
+      if (name.length < 3) {
+        res.status(422);
+        res.json({ message: "نام نمی تواند کمتر از 3 کاراکتر باشد!" });
+        return;
+      }
+      if (name.length > 40) {
+        res.status(422);
+        res.json({ message: "نام نمی تواند بیشتر از 40 کاراکتر باشد!" });
+        return;
+      }
+      if (password.length < 8) {
+        res.status(422);
+        res.json({ message: "کلمه عبور نمی تواند کمتر از 8 کاراکتر باشد!" });
+        return;
+      }
       const user = User.create({ name });
       await user.setPassword(password);
       await user.save();

@@ -2,15 +2,16 @@ import cookieParser = require("cookie-parser");
 import type { Express } from "express";
 import { LessThan } from "typeorm";
 import { Message } from "../entity/Message";
+import { User } from "../entity/User";
 import { authOnly } from "../middlewares/authOnly";
 import { asyncRoute } from "../utils/asyncRoute";
 
 const formateMessage = (m: Message) => ({
   id: m.id,
   content: m.content,
-  createdAt: m.createdAt.toLocaleDateString("fa-IR", {
+  createdAt: m.createdAt.toLocaleString(["fa-IR"], {
     dateStyle: "medium",
-    timeStyle: "medium",
+    timeStyle: "short",
     timeZone: "Asia/Tehran",
   }),
   user: {
@@ -37,14 +38,20 @@ export const messageRoutes = (app: Express) => {
     asyncRoute(res, async () => {
       const { id: userId } = req.user!;
       let { content } = req.body as { content: string };
-      content = String(content);
+      content = String(content || "").trim();
       if (content.length > 500) {
         res.status(422);
         res.json({ message: "متن پیام نمی تواند بیشتر از 500 کاراکتر باشد!" });
         return;
       }
+      if (!content) {
+        res.status(422);
+        res.json({ message: "متن پیام الزامی است!" });
+        return;
+      }
       const message = Message.create({ userId, content });
       await message.save();
+      message.user = await User.findOneByOrFail({ id: userId });
       res.json({ message: formateMessage(message) });
     });
   });
